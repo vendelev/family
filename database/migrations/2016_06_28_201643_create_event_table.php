@@ -14,8 +14,14 @@ class CreateEventTable extends Migration
     {
         Schema::create('event', function (Blueprint $table) {
             $table->increments('id');
+            $table->integer('person_id')->index('person')->comment = 'ID персоны';
+            $table->enum('type', array('bth', 'dth', 'mrg'))->comment = 'Тип события: brh - рождение, brh - смерть, mrg - свадьба';
+            $table->dateTime('datetime')->comment = 'Дата/время события';
+            $table->text('description')->comment = 'Описание события';
             $table->timestamps();
         });
+
+        DB::statement("alter table `event` comment 'События для персоны'");
     }
 
     /**

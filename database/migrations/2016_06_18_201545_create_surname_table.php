@@ -14,8 +14,12 @@ class CreateSurnameTable extends Migration
     {
         Schema::create('surname', function (Blueprint $table) {
             $table->increments('id');
+            $table->string('male', 45)->comment = 'Фамилия в мужском роде';
+            $table->string('female', 45)->comment = 'Фамилия в женском роде';
             $table->timestamps();
         });
+
+        DB::statement("alter table `surname` comment 'Список фамилий'");
     }
 
     /**
