@@ -27,6 +27,6 @@ class CreateMixedSurnameLangTable extends Migration
      */
     public function down()
     {
-        Schema::drop('mixed_surname_lang');
+        
     }
 }
