@@ -13,8 +13,8 @@ class ModifyName extends Migration
     public function up()
     {
         
-        DB::statement("ALTER TABLE `name` CHANGE `male_lname` `male_sname` VARCHAR(45);");
-        DB::statement("ALTER TABLE `name` CHANGE `female_lname` `female_sname` VARCHAR(45);");
+        DB::statement("ALTER TABLE `name` CHANGE `male_lname` `male_mname` VARCHAR(45);");
+        DB::statement("ALTER TABLE `name` CHANGE `female_lname` `female_mname` VARCHAR(45);");
     }
 
     /**
@@ -25,7 +25,7 @@ class ModifyName extends Migration
     public function down()
     {
         
-        DB::statement("ALTER TABLE `name` CHANGE `male_sname` `male_lname` VARCHAR(45);");
-        DB::statement("ALTER TABLE `name` CHANGE `female_sname` `female_lname` VARCHAR(45);");
+        DB::statement("ALTER TABLE `name` CHANGE `male_mname` `male_lname` VARCHAR(45);");
+        DB::statement("ALTER TABLE `name` CHANGE `female_mname` `female_lname` VARCHAR(45);");
     }
 }
