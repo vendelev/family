@@ -16,7 +16,7 @@ class CreateRelationTable extends Migration
             $table->increments('id');
             $table->integer('main_person_id')->index('main')->comment = 'Главная персона, для mr - мужчина, для ch - родитель';
             $table->integer('slave_person_id')->index('slave')->comment = 'Зависимая персона, для mr - женщина, для ch - ребенок';
-            $table->enum('type', array('mrg', 'prt'))->comment = 'Тип отношений: mr - супружество, prt - родительство';
+            $table->enum('type', array('mrg', 'prt'))->comment = 'Тип отношений: mrg - супружество, prt - родительство';
             $table->timestamps();
         });
 
