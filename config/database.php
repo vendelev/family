@@ -26,7 +26,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', $_ENV['DB_CONNECTION']),
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -54,11 +54,11 @@ return [
 
         'mysql' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', $_ENV['DB_HOST']),
-            'port' => env('DB_PORT', $_ENV['DB_PORT']),
-            'database' => env('DB_DATABASE', $_ENV['DB_DATABASE']),
-            'username' => env('DB_USERNAME', $_ENV['DB_USERNAME']),
-            'password' => env('DB_PASSWORD', $_ENV['DB_PASSWORD']),
+            'host' => env('DB_HOST', 'localhost'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'family'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', '123edc'),
             'charset' => 'utf8',
             'collation' => 'utf8_general_ci',
             'prefix' => '',
