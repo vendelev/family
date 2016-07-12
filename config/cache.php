@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => env('CACHE_DRIVER', $_ENV['CACHE_DRIVER']),
+    'default' => env('CACHE_DRIVER', 'file'),
 
     /*
     |--------------------------------------------------------------------------

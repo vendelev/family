@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'env' => env('APP_ENV', $_ENV['APP_ENV']),
+    'env' => env('APP_ENV', 'production'),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,7 +26,7 @@ return [
     |
     */
 
-    'debug' => env('APP_DEBUG', $_ENV['APP_DEBUG']),
+    'debug' => env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -39,7 +39,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', $_ENV['APP_URL']),
+    'url' => env('APP_URL', 'http://localhost'),
 
     /*
     |--------------------------------------------------------------------------
@@ -110,7 +110,7 @@ return [
 
     'log' => env('APP_LOG', 'single'),
 
-    'log_level' => env('APP_LOG_LEVEL', $_ENV['APP_LOG_LEVEL']),
+    'log_level' => env('APP_LOG_LEVEL', 'debug'),
 
     /*
     |--------------------------------------------------------------------------
