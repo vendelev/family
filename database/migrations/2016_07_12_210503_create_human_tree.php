@@ -18,7 +18,7 @@ class CreateHumanTree extends Migration
             $table->string('family')->comment = 'ID фамилии';
             $table->timestamps();
 
-            $table->index('family', 'family');
+            $table->index(['human_id', 'family'], 'family');
         });
 
         $humans = DB::table('humans')->get();

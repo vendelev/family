@@ -26,7 +26,7 @@ class ModifyRelations extends Migration
     public function down()
     {
         Schema::table('relations', function (Blueprint $table) {
-            //
+            $table->dropIndex('main_person_id');
         });
     }
 }

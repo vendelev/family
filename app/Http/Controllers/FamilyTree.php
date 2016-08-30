@@ -31,9 +31,9 @@ class FamilyTree extends Controller
      */
     public function index(Request $request)
     {
-        $humans = new Human;
+        $humans   = new Human;
         $surnames = new Surname;
-        $trees = new HumanTree;
+        $trees    = new HumanTree;
 //         $persons = $tree->all();
 //         var_dump($persons);
 // exit;
@@ -48,26 +48,24 @@ class FamilyTree extends Controller
     var_dump($query);
     var_dump($sql->time);
 });
- 
-        $male = $humans->join('human_trees', 'human_trees.human_id', '=', 'humans.id')
-                       ->join('surnames', 'humans.sname_id', '=', 'surnames.id')
-                       ->select('humans.id'/*, 'humans.fname_id', 'humans.mname_id', 'humans.sname_id', 'humans.bname_id'*/)
-                       ->where('surnames.male', '=', $surname)->get();
-
         
-        // $tree = $humans->join('human_trees', 'human_trees.person_id', '=', 'humans.id')
-        //                ->join('surnames', 'human_trees.sname_id', '=', 'surnames.id')
-        //                ->select('humans.id', 'humans.fname_id', 'humans.mname_id', 'humans.sname_id', 'humans.bname_id')
-        //                ->orWhere('surnames.female', '=', $surname)
-        //                ->orWhere('surnames.male', '=', $surname)
-        //                // ->union($male)
-        //                ->get();
+        $tree = $surnames
+                        ->join('humans', 'humans.sname_id', '=', 'surnames.id')
+                        ->join('human_trees', 
+                            function ($join) {
+                                $join->on('human_trees.human_id', '=', 'humans.id');
+                                $join->on('human_trees.family', '=', 'surnames.id');
+                            })
+                        ->select('humans.id', 'humans.fname_id', 'humans.mname_id', 'humans.sname_id', 'humans.bname_id')
+                        ->orWhere('surnames.female', '=', $surname)
+                        ->orWhere('surnames.male', '=', $surname)
+                        ->get();
 
-        // foreach ($tree as $item) {
+        foreach ($tree as $item) {
             
-        // }
+        }
 
-        // var_dump($male);
+        // var_dump($tree);
 
         // exit;
         // return view('welcome');
