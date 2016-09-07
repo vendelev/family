@@ -26,24 +26,27 @@ class Human extends Model
     var_dump($sql->time);
 });
 
-    	$retrunValue = $this->select(
-    							'humans.id',
-    							'humans.fname_id',
-    							'humans.mname_id',
-    							'humans.sname_id',
-    							'humans.bname_id')
-				            ->join('surnames',
-				            	'humans.sname_id', '=', 'surnames.id')
-				            ->join('human_trees', 
-				                function ($join) {
-				                    $join->on('human_trees.human_id', '=', 'humans.id');
-				                    $join->on('human_trees.family', '=', 'surnames.id');
-				                })
-				            ->orWhere('surnames.female', '=', $surname)
-				            ->orWhere('surnames.male', '=', $surname)
-				            ->get();
+        $retrunValue = $this->select(
+                                'humans.id',
+                                'humans.fname_id',
+                                'humans.mname_id',
+                                'humans.sname_id',
+                                'humans.bname_id')
+                            ->join('surnames',
+                                function ($join) {
+                                    $join->on('humans.sname_id', '=', 'surnames.id')
+                                         ->orOn('humans.bname_id', '=', 'surnames.id');
+                                })
+                            ->join('human_trees', 
+                                function ($join) {
+                                    $join->on('human_trees.human_id', '=', 'humans.id')
+                                         ->on('human_trees.family', '=', 'surnames.id');
+                                })
+                            ->orWhere('surnames.female', '=', $surname)
+                            ->orWhere('surnames.male', '=', $surname)
+                            ->get()->keyBy('id')->toArray();
  
-    	return $retrunValue;
+        return $retrunValue;
     }
 
 }
