@@ -34,17 +34,19 @@ class Human extends Model
                                 'humans.bname_id')
                             ->join('surnames',
                                 function ($join) {
-                                    $join->on('humans.sname_id', '=', 'surnames.id')
-                                         ->orOn('humans.bname_id', '=', 'surnames.id');
+                                    $join->on('humans.sname_id', '=', \DB::raw('CONCAT(`surnames`.`id`, "")'))
+                                         ->orOn('humans.bname_id', '=', \DB::raw('CONCAT(`surnames`.`id`, "")'));
                                 })
                             ->join('human_trees', 
                                 function ($join) {
                                     $join->on('human_trees.human_id', '=', 'humans.id')
-                                         ->on('human_trees.family', '=', 'surnames.id');
+                                         ->on('human_trees.family', '=', \DB::raw('CONCAT(`surnames`.`id`, "")'));
                                 })
                             ->orWhere('surnames.female', '=', $surname)
                             ->orWhere('surnames.male', '=', $surname)
-                            ->get()->keyBy('id')->toArray();
+                            ->get()
+                            ->keyBy('id')
+                            ->toArray();
  
         return $retrunValue;
     }
