@@ -76,46 +76,53 @@ class FamilyTree extends Controller
         $this->names    = $name->select('id', 'sex', 'fname', 'male_mname', 'female_mname')->whereIn('id', $name_ids)->get()->keyBy('id')->toArray();
 
 
-        $newTree = array();
+        $newTree = $this->getForest($relations);
+
+        return view('family/forest', ['tree' => $newTree]);
+    }
+
+    private function getForest($relations)
+    {
+        $returnValue = array();
         foreach ($relations as $item) {
             $mpi = $item['main_person_id'];
             $spi = $item['slave_person_id'];
 
-            if (empty($newTree[$mpi])) {
-                $newTree[$mpi] = $this->getHuman($mpi);
+            if (empty($returnValue[$mpi])) {
+                $returnValue[$mpi] = $this->getHuman($mpi);
             }
 
             switch ($item['type']) {
                 case 'prt':
-                    if (empty($newTree[$mpi]['children'])) {
-                        $newTree[$mpi]['children'] = array();
+                    if (empty($returnValue[$mpi]['children'])) {
+                        $returnValue[$mpi]['children'] = array();
                     }
-                    $newTree[$mpi]['children'][$spi] = $this->getHuman($spi);
+                    $returnValue[$mpi]['children'][$spi] = $this->getHuman($spi);
                     break;
                 case 'mrg':
-                    if (empty($newTree[$mpi]['marriage'])) {
-                        $newTree[$mpi]['marriage'] = array();
+                    if (empty($returnValue[$mpi]['marriage'])) {
+                        $returnValue[$mpi]['marriage'] = array();
                     }
-                    $newTree[$mpi]['marriage'][$spi] = $this->getHuman($spi);
+                    $returnValue[$mpi]['marriage'][$spi] = $this->getHuman($spi);
                     break;
             }
         }
 
         //Переделать утечки памяти из-за ссылок
         $toRemove = array();
-        foreach ($newTree as $id => $item) {
+        foreach ($returnValue as $id => $item) {
             if (!empty($item['children'])) {
                 foreach ($item['children'] as $key => $value) {
-                    if (!empty($newTree[$key])) {
-                        $newTree[$id]['children'][$key] = &$newTree[$key];
+                    if (!empty($returnValue[$key])) {
+                        $returnValue[$id]['children'][$key] = &$returnValue[$key];
                         $toRemove[]= $key;
                     }
                 }
             }
             if (!empty($item['marriage'])) {
                 foreach ($item['marriage'] as $key => $value) {
-                    if (!empty($newTree[$key])) {
-                        $newTree[$id]['marriage'][$key] = &$newTree[$key];
+                    if (!empty($returnValue[$key])) {
+                        $returnValue[$id]['marriage'][$key] = &$returnValue[$key];
                         $toRemove[]= $key;
                     }
                 }
@@ -123,14 +130,12 @@ class FamilyTree extends Controller
         }
 
         foreach ($toRemove as $key) {
-            unset($newTree[$key]);
+            unset($returnValue[$key]);
         }
 
-        var_dump($newTree);
+        $returnValue = $this->normolizeTree($returnValue);
 
-
-        // exit;
-        // return view('welcome');
+        return $returnValue;
     }
 
     private function getHuman($id)
@@ -164,6 +169,39 @@ class FamilyTree extends Controller
                     $returnValue['fio']['mname'] = $this->names[$human['mname_id']][$sex .'_mname'];
                 }
             }
+        }
+
+        return $returnValue;
+    }
+
+    private function normolizeTree($tree)
+    {
+        $returnValue = [];
+
+        foreach ($tree as $hid => $node) {
+
+            if (!empty($node['marriage'])) {
+                foreach ($node['marriage'] as $mhid => &$partner) {
+
+                    if (!empty($partner['children'])) {
+
+                        $partner['children'] = $this->normolizeTree($partner['children']);
+
+                        if (!empty($node['children'])) {
+
+                            $node['children'] = array_diff_key($node['children'], $partner['children']);
+                        }
+                    }
+                }
+            }
+
+            if (!empty($node['children'])) {
+                $node['marriage']['anonim']= $this->getHuman(0);
+                $node['marriage']['anonim']['children'] = $this->normolizeTree($node['children']);
+            }
+
+            $node['children']  = null;
+            $returnValue[$hid] = $node;
         }
 
         return $returnValue;

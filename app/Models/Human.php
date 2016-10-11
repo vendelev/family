@@ -17,14 +17,14 @@ class Human extends Model
     public function getBySurname($surname)
     {
 
-\DB::listen(function($sql) {
-    $query = $sql->sql;
-    $bindings = $sql->bindings;
-    $query = str_replace(array('%', '?'), array('%%', '\'%s\''), $query);
-    $query = vsprintf($query, $bindings);
-    var_dump($query);
-    var_dump($sql->time);
-});
+// \DB::listen(function($sql) {
+//     $query = $sql->sql;
+//     $bindings = $sql->bindings;
+//     $query = str_replace(array('%', '?'), array('%%', '\'%s\''), $query);
+//     $query = vsprintf($query, $bindings);
+//     var_dump($query);
+//     var_dump($sql->time);
+// });
 
         $retrunValue = $this->select(
                                 'humans.id',
