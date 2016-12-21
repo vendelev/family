@@ -14,6 +14,11 @@ use Family\Models\Relation;
 class FamilyTree extends Controller
 {
 
+    private $surname  = null;
+    private $surnames = array();
+    private $name     = null;
+    private $names    = array();
+
     /**
      * Create a new controller instance.
      *
@@ -33,52 +38,109 @@ class FamilyTree extends Controller
     public function index(Request $request)
     {
         $human    = new Human;
-        $name     = new Name;
-        $surname  = new Surname;
         $relation = new Relation;
-        $human    = new Human;
 
-        $sname    = $request->input('surname');
+        $sname        = $request->input('surname');
+        $this->humans = $human->getBySurname($sname);
+        $humansIds    = array_keys($this->humans);
+        $relations    = $relation->select('main_person_id', 'slave_person_id', 'type')->whereIn('main_person_id', $humansIds)->get()->toArray();
+        $emptyIds     = $this->getEmptyHumans($relations);
+        $humans       = $human->select('id', 'fname_id', 'mname_id', 'sname_id', 'bname_id')->whereIn('id', $emptyIds)->get()
+                            ->keyBy('id')->toArray();
 
-        $human_ids= array();
-        $sname_ids= array();
-        $name_ids = array();
-        $human_id = array();
+        foreach ($humans as $id => $item) {
+            $this->humans[$id] = $item;
+        }
 
-        $this->humans   = $human->getBySurname($sname);
+        $ids          = $this->getNameIds($this->humans);
+        $this->getSurnames($ids['sname']);
+        $this->getNames($ids['name']);
 
-        foreach ($this->humans as $item) {
+        $tree = $this->getForest($relations);
+        $tree = $this->normolizeTree($tree);
+
+        return view('family/forest', ['tree' => $tree]);
+    }
+
+    private function getNameIds($humans)
+    {
+        $returnValue = array(
+            'sname' => array(),
+            'name'  => array(),
+        );
+
+        foreach ($humans as $item) {
             
-            if (!in_array($item['id'], $human_ids)) {
-                $human_ids[]= $item['id'];
+            if ($id = $this->getHumanId($returnValue['sname'], $item['sname_id'])) {
+                $returnValue['sname'][]= $id;
             }
             
-            if (!in_array($item['sname_id'], $sname_ids)) {
-                $sname_ids[]= $item['sname_id'];
+            if ($id = $this->getHumanId($returnValue['sname'], $item['bname_id'])) {
+                $returnValue['sname'][]= $id;
             }
             
-            if (!in_array($item['bname_id'], $sname_ids)) {
-                $sname_ids[]= $item['bname_id'];
+            if ($id = $this->getHumanId($returnValue['name'], $item['fname_id'])) {
+                $returnValue['name'][]= $id;
             }
             
-            if (!in_array($item['fname_id'], $name_ids)) {
-                $name_ids[]= $item['fname_id'];
-            }
-            
-            if (!in_array($item['mname_id'], $name_ids)) {
-                $name_ids[]= $item['mname_id'];
+            if ($id = $this->getHumanId($returnValue['name'], $item['mname_id'])) {
+                $returnValue['name'][]= $id;
             }
         }
 
-        $relations= $relation->select('main_person_id', 'slave_person_id', 'type')->whereIn('main_person_id', $human_ids)->get()->toArray();
+        return $returnValue;
+    }
 
-        $this->surnames = $surname->select('id', 'male', 'female')->whereIn('id', $sname_ids)->get()->keyBy('id')->toArray();
-        $this->names    = $name->select('id', 'sex', 'fname', 'male_mname', 'female_mname')->whereIn('id', $name_ids)->get()->keyBy('id')->toArray();
+    private function getHumanId($items, $id)
+    {
+        $returnValue = false;
 
+        if (!in_array($id, $items)) {
+            $returnValue = $id;
+        }
 
-        $newTree = $this->getForest($relations);
+        return $returnValue;
+    }
 
-        return view('family/forest', ['tree' => $newTree]);
+    private function getSurnames($ids)
+    {
+        $surname = new Surname;
+        $this->surnames = $surname->select('id', 'male', 'female')
+                            ->whereIn('id', $ids)
+                            ->get()
+                            ->keyBy('id')
+                            ->toArray();
+    }
+
+    private function getNames($ids)
+    {
+        $name = new Name;
+        $this->names = $name->select('id', 'sex', 'fname', 'male_mname', 'female_mname')
+                      ->whereIn('id', $ids)
+                      ->get()
+                      ->keyBy('id')
+                      ->toArray();
+    }
+
+    private function getEmptyHumans($relations)
+    {
+        $returnValue = array();
+
+        foreach ($relations as $item) {
+
+            $mpi = $item['main_person_id'];
+            $spi = $item['slave_person_id'];
+
+            if (empty($this->humans[$mpi])) {
+                $returnValue[] = $mpi;
+            }
+
+            if (empty($this->humans[$spi])) {
+                $returnValue[] = $spi;
+            }
+        }
+
+        return $returnValue;
     }
 
     private function getForest($relations)
@@ -133,8 +195,6 @@ class FamilyTree extends Controller
             unset($returnValue[$key]);
         }
 
-        $returnValue = $this->normolizeTree($returnValue);
-
         return $returnValue;
     }
 
@@ -153,22 +213,28 @@ class FamilyTree extends Controller
 
             $human = $this->humans[$id];
 
-            if (!empty($this->names[$human['fname_id']])) {
+            $returnValue['fio']['fname'] = $this->getHumanName($this->names,    $human['fname_id'], 'fname');
+
+            if ($returnValue['fio']['fname']) {
                 $sex = ($this->names[$human['fname_id']]['sex'] == 'm') ? 'male' : 'female';
-                $returnValue['fio']['fname'] = $this->names[$human['fname_id']]['fname'];
 
-                if (!empty($this->surnames[$human['bname_id']])) {
-                    $returnValue['fio']['bname'] = $this->surnames[$human['bname_id']][$sex];
-                }
-
-                if (!empty($this->surnames[$human['sname_id']])) {
-                    $returnValue['fio']['sname'] = $this->surnames[$human['sname_id']][$sex];
-                }
-
-                if (!empty($this->names[$human['mname_id']])) {
-                    $returnValue['fio']['mname'] = $this->names[$human['mname_id']][$sex .'_mname'];
-                }
+                $returnValue['fio']['bname'] = $this->getHumanName($this->surnames, $human['bname_id'], $sex);
+                $returnValue['fio']['sname'] = $this->getHumanName($this->surnames, $human['sname_id'], $sex);
+                $returnValue['fio']['mname'] = $this->getHumanName($this->names,    $human['mname_id'], $sex .'_mname');
             }
+        } else {
+            // var_dump($id);
+        }
+
+        return $returnValue;
+    }
+
+    private function getHumanName($names, $id, $field)
+    {
+        $returnValue = '';
+
+        if (!empty($names[$id])) {
+            $returnValue = $names[$id][$field];
         }
 
         return $returnValue;

@@ -1,15 +1,15 @@
 
 @foreach ($tree as $node)
     <div class="p20">
-    {{ !empty($node['fio']['fname']) ? $node['fio']['fname'] : 'Empty' }} + 
+    {{ !empty($node['fio']['fname']) ? $node['fio']['fname'] : 'Empty' }}
 
     @if (!empty($node['marriage']))
         @foreach ($node['marriage'] as $key => $partner)
 
             @if ($key=='anonim')
-                Anonim
+                 + Anonim
             @else
-                {{ !empty($partner['fio']['fname']) ? $partner['fio']['fname'] : 'Empty' }}
+                 + {{ !empty($partner['fio']['fname']) ? $partner['fio']['fname'] : 'Empty' }}
             @endif
 
             @if (!empty($partner['children']))
