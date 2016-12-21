@@ -25,27 +25,9 @@ class ModifyHumanTrees extends Migration
         $relations= DB::table('relations')->select('main_person_id', 'slave_person_id', 'type')->get()->toArray();
         $inserts  = array();
 
-        // $forest = $this->getForest($relations);
-        $forest = $this->normolizeTree($this->getForest($relations));
+        $forest = $this->getForest($relations);
+        $forest = $this->normolizeTree($forest);
         $inserts= $this->setFamily($forest);
-
-// var_dump($inserts);
-        // foreach ($humans as $human) {
-
-        //     $inserts[] = array(
-        //         'human_id'   => $human->id,
-        //         'family'     => $human->sname_id,
-        //         'created_at' => date("Y-m-d H:i:s"),
-        //     );
-
-        //     if ($human->bname_id!=$human->sname_id) {
-        //         $inserts[] = array(
-        //             'human_id'   => $human->id,
-        //             'family'     => $human->bname_id,
-        //             'created_at' => date("Y-m-d H:i:s"),
-        //         );
-        //     }
-        // };
 
         DB::table('human_trees')->insert($inserts);
     }
