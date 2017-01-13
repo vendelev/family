@@ -51,4 +51,10 @@ class Human extends Model
         return $retrunValue;
     }
 
+    public function getByIds($ids)
+    {
+        $retrunValue = $this->select('id', 'fname_id', 'mname_id', 'sname_id', 'bname_id')
+                             ->whereIn('id', $ids)->get()->keyBy('id')->toArray();
+        return $retrunValue;
+    }
 }
