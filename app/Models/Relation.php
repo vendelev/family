@@ -16,13 +16,4 @@ class Relation extends Model
 
         return $returnValue;
     }
-
-    public function getByType($ids, $type='')
-    {
-        $relationsM = $this->getByField('main_person_id', $ids, $type);
-        $relationsS = $this->getByField('slave_person_id', $ids, $type);
-        $returnValue= array_merge($relationsM, $relationsS);
-
-        return $returnValue;
-    }
 }

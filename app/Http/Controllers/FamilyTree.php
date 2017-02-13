@@ -82,8 +82,8 @@ class FamilyTree extends Controller
 
     private function getRelations($ids)
     {
-        $mrg_relations = $this->relation->getByType($ids, 'mrg');
-        $prt_relations = $this->relation->getByField('main_person_id', $ids, 'prt');
+        $mrg_relations = $this->relation->getByField('main_person_id', $ids);
+        $prt_relations = $this->relation->getByField('slave_person_id', $ids, 'mrg');
         $returnValue   = array_merge($mrg_relations, $prt_relations);
 
         return $returnValue;
