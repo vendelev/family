@@ -4,6 +4,9 @@ namespace Family\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Модель для работы таблицей родственных отношений.
+ */
 class Relation extends Model
 {
     /**
