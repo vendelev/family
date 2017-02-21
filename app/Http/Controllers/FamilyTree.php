@@ -119,7 +119,7 @@ class FamilyTree extends Controller
      * @param  array $humans Список персон
      * @return array
      */
-    private function getEmptyHumanIds($relations, &$humans)
+    private function getEmptyHumanIds($relations, $humans)
     {
         $returnValue = array();
 
