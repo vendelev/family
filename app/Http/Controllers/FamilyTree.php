@@ -9,28 +9,18 @@ use Family\Http\Requests;
 use Family\Models\Human;
 use Family\Models\Name;
 use Family\Models\Surname;
-use Family\Models\Relation;
 
 /**
  * Контроллер показ дерева родственных отношений.
  */
 class FamilyTree extends Controller
 {
-    private $relation = null;
-    private $human    = null;
-    private $names    = array();
-    private $surnames = array();
-    private $main_humans  = array();
-    private $slave_humans = array();
-
     /**
      * @return void
      */
     public function __construct()
     {
         // $this->middleware('auth');
-        $this->relation = new Relation;
-        $this->human    = new Human;
     }
 
     /**
@@ -41,132 +31,27 @@ class FamilyTree extends Controller
      */
     public function index(Request $request)
     {
+        $sname  = $request->input('surname');
+        $human  = new Human;
         $surname= new Surname;
         $name   = new Name;
-        $sname  = $request->input('surname');
 
-        $this->main_humans = $this->human->getBySurname($sname);
-        $this->slave_humans= $this->main_humans;
+        $main_humans  = $human->getBySurname($sname);
+        $relations    = $human->getRelations();
+        $slave_humans = $human->getSlave();
 
-        $humansIds = array_keys($this->main_humans);
-        $relations = $this->getSlaveHumans($humansIds);
-        $main_ids  = $this->getNameIds($this->main_humans);
-        $slave_ids = $this->getNameIds($this->slave_humans);
-        $sname_ids = array_merge($main_ids['sname'], $slave_ids['sname']);
-        $name_ids  = array_merge($main_ids['name'], $slave_ids['name']);
+        $names   = $name->setIds($slave_humans)->getByIds();
+        $surnames= $surname->setIds($slave_humans)->getByIds();
 
-        $this->surnames = $surname->getByIds(array_unique($sname_ids));
-        $this->names    = $name->getByIds(array_unique($name_ids));
+        $human->setFio($surnames, $names);
+        $main_humans  = $human->getMain();
+        $slave_humans = $human->getSlave();
 
-        $tree = $this->getForest($relations);
-        $tree = $this->cleanForest($tree);
+        $tree = $this->getForest($relations, $main_humans, $slave_humans);
+        $tree = $this->cleanForest($tree, $main_humans);
         $tree = $this->normolizeTree($tree);
 
         return view('family/forest', ['tree' => $tree]);
-    }
-
-    /**
-     * Получение списка родственных отношений и родственников.
-     *
-     * @param  array $humansIds Список id
-     * @return array
-     */
-    private function getSlaveHumans($humansIds)
-    {
-        $returnValue = array();
-
-        if (!empty($humansIds)) {
-            $relations   = $this->getRelationsByIds($humansIds);
-            $emptyIds    = $this->getEmptyHumanIds($relations, $this->main_humans);
-            $returnValue = array_merge($returnValue, $relations);
-
-            while (!empty($emptyIds)) {
-
-                $humans = $this->human->getByIds($emptyIds);
-
-                foreach ($humans as $id => $item) {
-                    $this->slave_humans[$id] = $item;
-                }
-
-                $relations   = $this->getRelationsByIds($emptyIds);
-                $emptyIds    = $this->getEmptyHumanIds($relations, $this->slave_humans);
-                $returnValue = array_merge($returnValue, $relations);
-            }
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * Получение списка родственных отношений.
-     *
-     * @param  array $ids Список id
-     * @return array
-     */
-    private function getRelationsByIds($ids)
-    {
-        $mrg_relations = $this->relation->getByField('main_person_id', $ids);
-        $prt_relations = $this->relation->getByField('slave_person_id', $ids, 'mrg');
-        $returnValue   = array_merge($mrg_relations, $prt_relations);
-
-        return $returnValue;
-    }
-
-    /**
-     * Получение списка незаполненных персон.
-     *
-     * @param  array $relations Список родственных отношений
-     * @param  array $humans Список персон
-     * @return array
-     */
-    private function getEmptyHumanIds($relations, $humans)
-    {
-        $returnValue = array();
-
-        foreach ($relations as $item) {
-
-            $mpi = $item['main_person_id'];
-            $spi = $item['slave_person_id'];
-
-            if (empty($humans[$mpi])) {
-                $returnValue[] = $mpi;
-            }
-
-            if (empty($humans[$spi])) {
-                $returnValue[] = $spi;
-            }
-        }
-
-        $returnValue = array_unique($returnValue);
-
-        return $returnValue;
-    }
-
-    /**
-     * Получение списка id имен и фамилий.
-     *
-     * @param  array $humans Список персон
-     * @return array
-     */
-    private function getNameIds($humans)
-    {
-        $sname = array();
-        $name  = array();
-
-        foreach ($humans as $item) {
-            
-            $sname[]= $item['sname_id'];
-            $sname[]= $item['bname_id'];
-            $name[] = $item['fname_id'];
-            $name[] = $item['mname_id'];
-        }
-
-        $returnValue = array(
-            'sname' => array_unique($sname),
-            'name'  => array_unique($name),
-        );
-
-        return $returnValue;
     }
 
     /**
@@ -175,7 +60,7 @@ class FamilyTree extends Controller
      * @param  array $relations Список родственных отношений
      * @return array
      */
-    private function getForest($relations)
+    private function getForest($relations, $main_humans, $slave_humans)
     {
         $returnValue = array();
         foreach ($relations as $item) {
@@ -183,10 +68,10 @@ class FamilyTree extends Controller
             $spi = $item['slave_person_id'];
 
             if (empty($returnValue[$mpi])) {
-                $returnValue[$mpi] = $this->getHuman($mpi);
+                $returnValue[$mpi] = $this->getHuman($mpi, $main_humans, $slave_humans);
             }
             if (empty($returnValue[$spi])) {
-                $returnValue[$spi] = $this->getHuman($spi);
+                $returnValue[$spi] = $this->getHuman($spi, $main_humans, $slave_humans);
             }
 
             switch ($item['type']) {
@@ -209,68 +94,24 @@ class FamilyTree extends Controller
      * @param  array $relations Список родственных отношений
      * @return array
      */
-    private function getHuman($id)
+    private function getHuman($id, $main_humans, $slave_humans)
     {
-        if (!empty($this->main_humans[$id])) {
-            $returnValue = $this->getHumanFio($this->main_humans[$id]);
-        } elseif (!empty($this->slave_humans[$id])) {
-            $returnValue = $this->getHumanFio($this->slave_humans[$id]);
+        if (!empty($main_humans[$id])) {
+            $returnValue = $main_humans[$id];
+        } elseif (!empty($slave_humans[$id])) {
+            $returnValue = $slave_humans[$id];
         } else {
-            $returnValue = $this->getHumanFio(false);
+            $returnValue = array(
+                'fio' => array(
+                    'bname' => '',
+                    'sname' => '',
+                    'fname' => '',
+                    'mname' => '',
+                ),
+            );
         }
         $returnValue['marriage'] = array();
         $returnValue['children'] = array();
-
-        return $returnValue;
-    }
-
-    /**
-     * Получение ФИО персоны.
-     *
-     * @param  array|false $human Персона
-     * @return array
-     */
-    private function getHumanFio($human)
-    {
-        $returnValue = array(
-            'fio' => array(
-                'bname' => '',
-                'sname' => '',
-                'fname' => '',
-                'mname' => '',
-            ),
-        );
-
-        if ($human) {
-            $returnValue['fio']['fname'] = $this->getHumanName($this->names, $human['fname_id'], 'fname');
-
-            if ($returnValue['fio']['fname']) {
-                $sex = ($this->names[$human['fname_id']]['sex'] == 'm') ? 'male' : 'female';
-
-                $returnValue['fio']['bname'] = $this->getHumanName($this->surnames, $human['bname_id'], $sex);
-                $returnValue['fio']['sname'] = $this->getHumanName($this->surnames, $human['sname_id'], $sex);
-                $returnValue['fio']['mname'] = $this->getHumanName($this->names,    $human['mname_id'], $sex .'_mname');
-            }
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * Получение Имени/Фамилии персоны.
-     *
-     * @param  array $names Список значений
-     * @param  array $id    
-     * @param  array $field Наименование возвращаемого поля
-     * @return array
-     */
-    private function getHumanName($names, $id, $field)
-    {
-        $returnValue = '';
-
-        if (!empty($names[$id])) {
-            $returnValue = $names[$id][$field];
-        }
 
         return $returnValue;
     }
@@ -281,7 +122,7 @@ class FamilyTree extends Controller
      * @param  array $returnValue Дерево родственных отношений
      * @return array Дерево родственных отношений
      */
-    private function cleanForest($returnValue)
+    private function cleanForest($returnValue, $main_humans)
     {
         $toRemove = array();
         foreach ($returnValue as $id => $item) {
@@ -296,9 +137,10 @@ class FamilyTree extends Controller
             }
 
             if (!empty($item['marriage'])) {
-                foreach ($item['marriage'] as $key => $value) {
+                foreach ($item['marriage'] as $key => $partner) {
+                    
                     if (!empty($returnValue[$key])) {
-                        if (empty($this->main_humans[$key])) {
+                        if (empty($main_humans[$key])) {
                             $toRemove[]= $key;
                         }
                     }
