@@ -4,15 +4,159 @@ namespace Family\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use Family\Models\Relation;
+
+/**
+ * Модель для работы таблицей персон.
+ */
 class Human extends Model
 {
+    private $mainHumans  = array();
+    private $slaveHumans = array();
+
+    public function getMain()
+    {
+        return $this->mainHumans;
+    }
+
+    public function getSlave()
+    {
+        return $this->slaveHumans;
+    }
+
+    private function setSlave($id, $item)
+    {
+        $this->slaveHumans[$id] = $item;
+    }
+
+    /**
+     * Получение списка родственных отношений и родственников.
+     *
+     * @param  array $humansIds Список id
+     * @return array
+     */
+    public function getRelations()
+    {
+        $returnValue = array();
+        $relation    = new Relation;
+
+        if (!empty($this->mainHumans)) {
+            $returnValue = $relation->getByIds(array_keys($this->mainHumans));
+            $emptyIds    = $this->getEmptyIds($returnValue, $this->mainHumans);
+
+            while (!empty($emptyIds)) {
+
+                $humans = $this->getByIds($emptyIds);
+
+                foreach ($humans as $id => $item) {
+                    $this->setSlave($id, $item);
+                }
+
+                $returnValue = $relation->getByIds(array_keys($this->slaveHumans));
+                $emptyIds    = $this->getEmptyIds($returnValue, $this->slaveHumans);
+            }
+        }
+
+        return $returnValue;
+    }
+
+
+
+    /**
+     * Получение списка незаполненных персон.
+     *
+     * @param  array $relations Список родственных отношений
+     * @param  array $humans Список персон
+     * @return array
+     */
+    private function getEmptyIds($relations, $humans)
+    {
+        $returnValue = array();
+
+        foreach ($relations as $item) {
+
+            $mpi = $item['main_person_id'];
+            $spi = $item['slave_person_id'];
+
+            if (empty($humans[$mpi])) {
+                $returnValue[] = $mpi;
+            }
+
+            if (empty($humans[$spi])) {
+                $returnValue[] = $spi;
+            }
+        }
+
+        $returnValue = array_unique($returnValue);
+
+        return $returnValue;
+    }
+
+    public function setFio($surnames, $names)
+    {
+        foreach ($this->mainHumans as $id => $human) {
+            $this->mainHumans[$id]['fio'] = $this->getFio($human, $surnames, $names);
+        }
+        foreach ($this->slaveHumans as $id => $human) {
+            $this->slaveHumans[$id]['fio'] = $this->getFio($human, $surnames, $names);
+        }
+    }
+
+    /**
+     * Получение ФИО персоны.
+     *
+     * @param  array|false $human Персона
+     * @return array
+     */
+    private function getFio($human, $surnames, $names)
+    {
+        $returnValue = array(
+            'bname' => '',
+            'sname' => '',
+            'fname' => '',
+            'mname' => '',
+        );
+
+        if ($human) {
+            $returnValue['fname'] = $this->getName($names, $human['fname_id'], 'fname');
+
+            if ($returnValue['fname']) {
+                $sex = ($names[$human['fname_id']]['sex'] == 'm') ? 'male' : 'female';
+
+                $returnValue['bname'] = $this->getName($surnames, $human['bname_id'], $sex);
+                $returnValue['sname'] = $this->getName($surnames, $human['sname_id'], $sex);
+                $returnValue['mname'] = $this->getName($names,    $human['mname_id'], $sex .'_mname');
+            }
+        }
+
+        return $returnValue;
+    }
+
+    /**
+     * Получение Имени/Фамилии персоны.
+     *
+     * @param  array $names Список значений
+     * @param  array $id    
+     * @param  array $field Наименование возвращаемого поля
+     * @return array
+     */
+    private function getName($names, $id, $field)
+    {
+        $returnValue = '';
+
+        if (!empty($names[$id])) {
+            $returnValue = $names[$id][$field];
+        }
+
+        return $returnValue;
+    }
 
     /**
      * Получение списка людей входящих в одно дерево по фамилии.
      *
      * @param string $surname
      *
-     * @return Illuminate\Support\Collection
+     * @return array
      */
     public function getBySurname($surname)
     {
@@ -26,7 +170,7 @@ class Human extends Model
 //     var_dump($sql->time);
 // });
 
-        $retrunValue = $this->select(
+        $this->mainHumans = $this->select(
                                 'humans.id',
                                 'humans.fname_id',
                                 'humans.mname_id',
@@ -48,14 +192,20 @@ class Human extends Model
                             ->get()
                             ->keyBy('id')
                             ->toArray();
- 
-        return $retrunValue;
+        $this->slaveHumans= $this->mainHumans;
+        return $this->mainHumans;
     }
 
+    /**
+     * Получение списка персон.
+     *
+     * @param  array $ids Список id
+     * @return array
+     */
     public function getByIds($ids)
     {
         $retrunValue = $this->select('id', 'fname_id', 'mname_id', 'sname_id', 'bname_id')
-                             ->whereIn('id', $ids)->get()->keyBy('id')->toArray();
+                            ->whereIn('id', $ids)->get()->keyBy('id')->toArray();
         return $retrunValue;
     }
 }
