@@ -39,7 +39,7 @@ class Surname extends Model
      *
      * @return array
      */
-    private function getIds()
+    public function getIds()
     {
         return $this->ids;
     }

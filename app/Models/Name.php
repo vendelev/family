@@ -40,7 +40,7 @@ class Name extends Model
      *
      * @return array
      */
-    private function getIds()
+    public function getIds()
     {
         return $this->ids;
     }
