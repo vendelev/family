@@ -135,10 +135,10 @@ class Human extends Model
     /**
      * Получение Имени/Фамилии персоны.
      *
-     * @param  array $names Список значений
-     * @param  array $id    
-     * @param  array $field Наименование возвращаемого поля
-     * @return array
+     * @param  array  $names Список значений
+     * @param  array  $id
+     * @param  string $field Наименование возвращаемого поля
+     * @return string
      */
     private function getName($names, $id, $field)
     {
@@ -170,23 +170,19 @@ class Human extends Model
 //     var_dump($sql->time);
 // });
 
+// ->join('human_trees',
+//     function ($join) {
+//         $join->on('human_trees.human_id', '=', 'humans.id')
+//              ->on('human_trees.family', '=', \DB::raw('CONCAT(`surnames`.`id`, "")'));
+//     })
+
         $this->mainHumans = $this->select(
                                 'humans.id',
                                 'humans.fname_id',
                                 'humans.mname_id',
                                 'humans.sname_id',
                                 'humans.bname_id')
-                            ->join('surnames',
-                                function ($join) {
-                                    // $join->on('humans.sname_id', '=', \DB::raw('CONCAT(`surnames`.`id`, "")'))
-                                         // ->orOn('humans.bname_id', '=', \DB::raw('CONCAT(`surnames`.`id`, "")'));
-                                    $join->on('humans.bname_id', '=', \DB::raw('CONCAT(`surnames`.`id`, "")'));
-                                })
-                            // ->join('human_trees', 
-                            //     function ($join) {
-                            //         $join->on('human_trees.human_id', '=', 'humans.id')
-                            //              ->on('human_trees.family', '=', \DB::raw('CONCAT(`surnames`.`id`, "")'));
-                            //     })
+                            ->join('surnames', 'humans.bname_id', '=', 'surnames.id')
                             ->orWhere('surnames.female', '=', $surname)
                             ->orWhere('surnames.male', '=', $surname)
                             ->get()
