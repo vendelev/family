@@ -36,7 +36,7 @@ class FamilyTree extends Controller
         $surname= new Surname;
         $name   = new Name;
 
-        $main_humans  = $human->getBySurname($sname);
+        $human->getBySurname($sname);
         $relations    = $human->getRelations();
         $slave_humans = $human->getSlave();
 
@@ -57,7 +57,10 @@ class FamilyTree extends Controller
     /**
      * Получение дерева персон.
      *
-     * @param  array $relations Список родственных отношений
+     * @param  array $relations     Список родственных отношений
+     * @param  array $main_humans   Список основных персон
+     * @param  array $slave_humans  Список зависымых перосон
+     *
      * @return array
      */
     private function getForest($relations, $main_humans, $slave_humans)
@@ -91,7 +94,10 @@ class FamilyTree extends Controller
     /**
      * Получение персоны с заполненным ФИО.
      *
-     * @param  array $relations Список родственных отношений
+     * @param  int   $id            Id персоны
+     * @param  array $main_humans   Список основных персон
+     * @param  array $slave_humans  Список зависымых перосон
+     *
      * @return array
      */
     private function getHuman($id, $main_humans, $slave_humans)
@@ -120,6 +126,8 @@ class FamilyTree extends Controller
      * Удаление пустых массивов и дублирующих веток дерева персон.
      *
      * @param  array $returnValue Дерево родственных отношений
+     * @param  array $main_humans   Список основных персон
+     *
      * @return array Дерево родственных отношений
      */
     private function cleanForest($returnValue, $main_humans)
@@ -161,8 +169,8 @@ class FamilyTree extends Controller
     /**
      * Удаление дублирующих записей marriage и children в дереве.
      *
-     * @param  array $returnValue Дерево родственных отношений
-     * @return array Дерево родственных отношений
+     * @param  array $tree  Дерево родственных отношений
+     * @return array        Дерево родственных отношений
      */
     private function normolizeTree($tree)
     {

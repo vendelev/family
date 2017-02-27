@@ -32,7 +32,6 @@ class Human extends Model
     /**
      * Получение списка родственных отношений и родственников.
      *
-     * @param  array $humansIds Список id
      * @return array
      */
     public function getRelations()
@@ -105,7 +104,9 @@ class Human extends Model
     /**
      * Получение ФИО персоны.
      *
-     * @param  array|false $human Персона
+     * @param  array $human     Персона
+     * @param  array $surnames  Списко фамилий
+     * @param  array $names     Список имен
      * @return array
      */
     private function getFio($human, $surnames, $names)
@@ -136,7 +137,7 @@ class Human extends Model
      * Получение Имени/Фамилии персоны.
      *
      * @param  array  $names Список значений
-     * @param  array  $id
+     * @param  int  $id
      * @param  string $field Наименование возвращаемого поля
      * @return string
      */
