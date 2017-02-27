@@ -4,11 +4,8 @@ namespace Family\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-use Family\Http\Requests;
-
 use Family\Models\Human;
-use Family\Models\Name;
-use Family\Models\Surname;
+use Family\Http\Controllers\Fio;
 
 /**
  * Контроллер показ дерева родственных отношений.
@@ -33,19 +30,15 @@ class FamilyTree extends Controller
     {
         $sname  = $request->input('surname');
         $human  = new Human;
-        $surname= new Surname;
-        $name   = new Name;
+        $fio    = new Fio();
 
-        $human->getBySurname($sname);
+        $main_humans  = $human->getBySurname($sname);
         $relations    = $human->getRelations();
         $slave_humans = $human->getSlave();
 
-        $names   = $name->setIds($slave_humans)->getByIds();
-        $surnames= $surname->setIds($slave_humans)->getByIds();
-
-        $human->setFio($surnames, $names);
-        $main_humans  = $human->getMain();
-        $slave_humans = $human->getSlave();
+        $fio->setHumans($slave_humans)->setNames()->setSurnames();
+        $main_humans  = $fio->setFio($main_humans);
+        $slave_humans = $fio->setFio($slave_humans);
 
         $tree = $this->getForest($relations, $main_humans, $slave_humans);
         $tree = $this->cleanForest($tree, $main_humans);
