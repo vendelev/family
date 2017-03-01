@@ -11,22 +11,30 @@ use Family\Models\Relation;
  */
 class Human extends Model
 {
-    private $mainHumans  = array();
-    private $slaveHumans = array();
+    private $humans  = array();
 
-    public function getMain()
+    /**
+     * @param array $humans
+     * @param bool $isMain
+     *
+     * @return Human
+     */
+    public function setHumans($humans, $isMain=false)
     {
-        return $this->mainHumans;
+        foreach ($humans as $id=>$human) {
+            $this->humans[$id] = $human;
+            $this->humans[$id]['isMain'] = $isMain;
+        }
+
+        return $this;
     }
 
-    public function getSlave()
+    /**
+     * @return array
+     */
+    public function getHumans()
     {
-        return $this->slaveHumans;
-    }
-
-    private function setSlave($id, $item)
-    {
-        $this->slaveHumans[$id] = $item;
+        return $this->humans;
     }
 
     /**
@@ -38,39 +46,35 @@ class Human extends Model
     {
         $returnValue = array();
         $relation    = new Relation;
+        $humans      = $this->getHumans();
 
-        if (!empty($this->mainHumans)) {
-            $returnValue = $relation->getByIds(array_keys($this->mainHumans));
-            $emptyIds    = $this->getEmptyIds($returnValue, $this->mainHumans);
+        if (!empty($humans)) {
+            $returnValue = $relation->getByIds(array_keys($humans));
+            $emptyIds    = $this->getEmptyIds($returnValue);
 
             while (!empty($emptyIds)) {
 
                 $humans = $this->getByIds($emptyIds);
+                $this->setHumans($humans);
 
-                foreach ($humans as $id => $item) {
-                    $this->setSlave($id, $item);
-                }
-
-                $returnValue = $relation->getByIds(array_keys($this->slaveHumans));
-                $emptyIds    = $this->getEmptyIds($returnValue, $this->slaveHumans);
+                $returnValue = $relation->getByIds(array_keys($humans));
+                $emptyIds    = $this->getEmptyIds($returnValue);
             }
         }
 
         return $returnValue;
     }
 
-
-
     /**
      * Получение списка незаполненных персон.
      *
      * @param  array $relations Список родственных отношений
-     * @param  array $humans Список персон
      * @return array
      */
-    private function getEmptyIds($relations, $humans)
+    public function getEmptyIds($relations)
     {
         $returnValue = array();
+        $humans = $this->getHumans();
 
         foreach ($relations as $item) {
 
@@ -90,8 +94,6 @@ class Human extends Model
 
         return $returnValue;
     }
-
-
 
     /**
      * Получение списка людей входящих в одно дерево по фамилии.
@@ -118,7 +120,7 @@ class Human extends Model
 //              ->on('human_trees.family', '=', \DB::raw('CONCAT(`surnames`.`id`, "")'));
 //     })
 
-        $this->mainHumans = $this->select(
+        $returnValue = $this->select(
                                 'humans.id',
                                 'humans.fname_id',
                                 'humans.mname_id',
@@ -130,8 +132,8 @@ class Human extends Model
                             ->get()
                             ->keyBy('id')
                             ->toArray();
-        $this->slaveHumans= $this->mainHumans;
-        return $this->mainHumans;
+
+        return $returnValue;
     }
 
     /**
