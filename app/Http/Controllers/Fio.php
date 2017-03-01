@@ -9,46 +9,29 @@ class Fio
 {
     private $names    = [];
     private $surnames = [];
-    private $humans   = [];
 
     /**
-     * @param $humans
+     * @param array $humans
      *
-     * @return $this
+     * @return Fio
      */
-    public function setHumans($humans)
-    {
-        $this->humans = $humans;
-
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    private function getHumans()
-    {
-        return $this->humans;
-    }
-
-    /**
-     * @return $this
-     */
-    public function setSurnames()
+    public function selectSurnames($humans)
     {
         $model = new Surname;
-        $this->surnames = $model->setIds($this->getHumans())->getByIds();
+        $this->surnames = $model->setIds($humans)->getByIds();
 
         return $this;
     }
 
     /**
-     * @return $this
+     * @param array $humans
+     *
+     * @return Fio
      */
-    public function setNames()
+    public function selectNames($humans)
     {
         $model = new Name;
-        $this->names = $model->setIds($this->getHumans())->getByIds();
+        $this->names = $model->setIds($humans)->getByIds();
 
         return $this;
     }
@@ -56,7 +39,7 @@ class Fio
     /**
      * @return array
      */
-    private function getSurnames()
+    public function getSurnames()
     {
         return $this->surnames;
     }
@@ -64,20 +47,27 @@ class Fio
     /**
      * @return array
      */
-    private function getNames()
+    public function getNames()
     {
         return $this->names;
     }
 
     /**
-     * @param $humans
+     * @param array $humans
      *
      * @return array
      */
-    public function setFio($humans)
+    public function fillFio($humans)
     {
+        $this->selectNames($humans)
+             ->selectSurnames($humans);
+
+        $surnames = $this->getSurnames();
+        $names    = $this->getNames();
+
         foreach ($humans as $id => $human) {
-            $humans[$id]['fio'] = $this->getFio($human);
+            $humans[$id]['fio'] = $this->getFio($human, $surnames, $names);
+
         }
 
         return $humans;
@@ -87,30 +77,26 @@ class Fio
      * Получение ФИО персоны.
      *
      * @param  array $human Персона
+     * @param  array $surnames
+     * @param  array $names
+     *
      * @return array
      */
-    private function getFio($human)
+    public function getFio($human, $surnames, $names)
     {
         $returnValue = array(
             'bname' => '',
             'sname' => '',
-            'fname' => '',
+            'fname' => $this->getName($names, $human['fname_id'], 'fname'),
             'mname' => '',
         );
 
-        if ($human) {
-            $surnames = $this->getSurnames();
-            $names    = $this->getNames();
+        if ($returnValue['fname']) {
+            $sex = ($names[$human['fname_id']]['sex'] == 'm') ? 'male' : 'female';
 
-            $returnValue['fname'] = $this->getName($names, $human['fname_id'], 'fname');
-
-            if ($returnValue['fname']) {
-                $sex = ($names[$human['fname_id']]['sex'] == 'm') ? 'male' : 'female';
-
-                $returnValue['bname'] = $this->getName($surnames, $human['bname_id'], $sex);
-                $returnValue['sname'] = $this->getName($surnames, $human['sname_id'], $sex);
-                $returnValue['mname'] = $this->getName($names,    $human['mname_id'], $sex .'_mname');
-            }
+            $returnValue['bname'] = $this->getName($surnames, $human['bname_id'], $sex);
+            $returnValue['sname'] = $this->getName($surnames, $human['sname_id'], $sex);
+            $returnValue['mname'] = $this->getName($names,    $human['mname_id'], $sex .'_mname');
         }
 
         return $returnValue;
