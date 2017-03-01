@@ -13,7 +13,7 @@ use Family\Http\Controllers\Fio;
 class FamilyTree extends Controller
 {
     /**
-     * @return void
+     *
      */
     public function __construct()
     {
@@ -29,19 +29,18 @@ class FamilyTree extends Controller
     public function index(Request $request)
     {
         $sname  = $request->input('surname');
-        $human  = new Human;
+        $human  = new Human();
         $fio    = new Fio();
 
-        $main_humans  = $human->getBySurname($sname);
-        $relations    = $human->getRelations();
-        $slave_humans = $human->getSlave();
+        $humans  = $human->getBySurname($sname);
+        $human->setHumans($humans, true);
 
-        $fio->setHumans($slave_humans)->setNames()->setSurnames();
-        $main_humans  = $fio->setFio($main_humans);
-        $slave_humans = $fio->setFio($slave_humans);
+        $relations = $human->getRelations();
+        $humans    = $human->getHumans();
+        $humans    = $fio->fillFio($humans);
 
-        $tree = $this->getForest($relations, $main_humans, $slave_humans);
-        $tree = $this->cleanForest($tree, $main_humans);
+        $tree = $this->getForest($relations, $humans);
+        $tree = $this->cleanForest($tree, $humans);
         $tree = $this->normolizeTree($tree);
 
         return view('family/forest', ['tree' => $tree]);
@@ -50,13 +49,12 @@ class FamilyTree extends Controller
     /**
      * Получение дерева персон.
      *
-     * @param  array $relations     Список родственных отношений
-     * @param  array $main_humans   Список основных персон
-     * @param  array $slave_humans  Список зависымых перосон
+     * @param  array $relations Список родственных отношений
+     * @param  array $humans    Список основных персон
      *
      * @return array
      */
-    private function getForest($relations, $main_humans, $slave_humans)
+    private function getForest($relations, $humans)
     {
         $returnValue = array();
         foreach ($relations as $item) {
@@ -64,10 +62,10 @@ class FamilyTree extends Controller
             $spi = $item['slave_person_id'];
 
             if (empty($returnValue[$mpi])) {
-                $returnValue[$mpi] = $this->getHuman($mpi, $main_humans, $slave_humans);
+                $returnValue[$mpi] = $this->getHuman($mpi, $humans);
             }
             if (empty($returnValue[$spi])) {
-                $returnValue[$spi] = $this->getHuman($spi, $main_humans, $slave_humans);
+                $returnValue[$spi] = $this->getHuman($spi, $humans);
             }
 
             switch ($item['type']) {
@@ -87,18 +85,15 @@ class FamilyTree extends Controller
     /**
      * Получение персоны с заполненным ФИО.
      *
-     * @param  int   $id            Id персоны
-     * @param  array $main_humans   Список основных персон
-     * @param  array $slave_humans  Список зависымых перосон
+     * @param  int   $id       Id персоны
+     * @param  array $humans   Список основных персон
      *
      * @return array
      */
-    private function getHuman($id, $main_humans, $slave_humans)
+    private function getHuman($id, $humans)
     {
-        if (!empty($main_humans[$id])) {
-            $returnValue = $main_humans[$id];
-        } elseif (!empty($slave_humans[$id])) {
-            $returnValue = $slave_humans[$id];
+        if (!empty($humans[$id])) {
+            $returnValue = $humans[$id];
         } else {
             $returnValue = array(
                 'fio' => array(
@@ -119,11 +114,11 @@ class FamilyTree extends Controller
      * Удаление пустых массивов и дублирующих веток дерева персон.
      *
      * @param  array $returnValue Дерево родственных отношений
-     * @param  array $main_humans   Список основных персон
+     * @param  array $humans   Список основных персон
      *
      * @return array Дерево родственных отношений
      */
-    private function cleanForest($returnValue, $main_humans)
+    private function cleanForest($returnValue, $humans)
     {
         $toRemove = array();
         foreach ($returnValue as $id => $item) {
@@ -141,7 +136,7 @@ class FamilyTree extends Controller
                 foreach ($item['marriage'] as $key => $partner) {
                     
                     if (!empty($returnValue[$key])) {
-                        if (empty($main_humans[$key])) {
+                        if (!$humans[$key]['isMain']) {
                             $toRemove[]= $key;
                         }
                     }
