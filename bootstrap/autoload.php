@@ -32,3 +32,16 @@ $compiledPath = __DIR__.'/cache/compiled.php';
 if (file_exists($compiledPath)) {
     require $compiledPath;
 }
+
+if (function_exists('pinba_script_name_set') && !empty($_SERVER['REQUEST_URI'])) {
+    pinba_script_name_set($_SERVER['REQUEST_URI']);
+}
+if (function_exists('pinba_hostname_set')) {
+    pinba_hostname_set('php7');
+}
+
+ini_set('xdebug.default_enable', '1');
+ini_set('xdebug.overload_var_dump', '1');
+ini_set('xdebug.var_display_max_data', '1255');
+ini_set('xdebug.var_display_max_depth', '50');
+ini_set('xdebug.var_display_max_children', '128');
