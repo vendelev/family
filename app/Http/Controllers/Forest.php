@@ -140,7 +140,7 @@ class Forest
         $returnValue = [];
 
         foreach ($tree as $hid => $node) {
-            $hasChildren = false;
+            $hasPartnerChild = false;
 
             if (!empty($node['marriage'])) {
                 foreach ($node['marriage'] as $mhid => $partner) {
@@ -149,9 +149,21 @@ class Forest
 
                     if (!empty($partner['children'])) {
 
-                        unset($node['children']);
+                        $hasPartnerChild = true;
                         $node['marriage'][$mhid]['children'] = $this->normolize($partner['children']);
                     }
+                }
+            }
+
+            if (!empty($node['children'])) {
+
+                if ($hasPartnerChild) {
+
+                    unset($node['children']);
+
+                } else {
+
+                    $node['children'] = $this->normolize($node['children']);
                 }
             }
 
